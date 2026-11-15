@@ -374,13 +374,13 @@ function discoverAll() {
 setInterval(() => client?.connected && discoverAll(), POLL_INTERVAL_MS);
 
 // ---------------------------------------------------------------------------
-// Konfiguration: Liste der Steckdosen (IP + Name), Reihenfolge = Anzeige im Dashboard
+// Konfiguration: Liste der Steckdosen (Nummer + Name + IP), Reihenfolge = Anzeige im Dashboard
 // ---------------------------------------------------------------------------
 function loadConfig() {
   try {
     const list = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    // ältere Dateien enthalten noch "nummer"/"typ" – nur IP und Name sind relevant
-    return list.filter((p) => p.ip).map((p) => ({ name: p.name || '', ip: p.ip }));
+    // "nummer" = Beschriftung auf der Steckdose (optional); ältere Dateien enthalten noch "typ" – wird ignoriert
+    return list.filter((p) => p.ip).map((p) => ({ nummer: p.nummer != null ? String(p.nummer) : '', name: p.name || '', ip: p.ip }));
   } catch {
     return [];
   }
@@ -389,12 +389,17 @@ function loadConfig() {
 function saveConfig(list) {
   if (!Array.isArray(list)) throw new Error('Liste erwartet');
   const seen = new Set();
+  const seenNr = new Set();
   const plugs = list.map((p) => {
     const ip = String(p.ip || '').trim();
     if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) throw new Error(`Ungültige IP-Adresse: ${ip || '(leer)'}`);
     if (seen.has(ip)) throw new Error(`IP ${ip} ist doppelt eingetragen`);
     seen.add(ip);
-    return { name: String(p.name || '').trim(), ip };
+    const nummer = String(p.nummer ?? '').trim();
+    if (nummer.length > 8) throw new Error(`Nummer „${nummer}“ ist zu lang (max. 8 Zeichen)`);
+    if (nummer && seenNr.has(nummer)) throw new Error(`Nummer ${nummer} ist doppelt vergeben`);
+    if (nummer) seenNr.add(nummer);
+    return { nummer, name: String(p.name || '').trim(), ip };
   }); // Reihenfolge wie in der Oberfläche festgelegt
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(plugs, null, 2) + '\n');
 }

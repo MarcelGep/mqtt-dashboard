@@ -35,7 +35,7 @@ Alles, was du in der Oberfläche einstellst, liegt in zwei Dateien im Datenordne
 | Datei           | Inhalt                                    | Fehlt sie …                                                         |
 |-----------------|-------------------------------------------|---------------------------------------------------------------------|
 | `settings.json` | Broker-Adresse, Benutzer, Passwort        | Standard-Adresse ohne Login, Zugangsdaten in der Oberfläche eintragen |
-| `plugs.json`    | Steckdosen (IP + Name) in Anzeige-Reihenfolge | keine Steckdosen eingerichtet                                        |
+| `plugs.json`    | Steckdosen (Nummer + Name + IP) in Anzeige-Reihenfolge | keine Steckdosen eingerichtet                                        |
 
 Der Datenordner ist standardmäßig der Projektordner und lässt sich mit `DATA_DIR=/pfad` ändern.
 Beide Dateien werden beim Speichern automatisch angelegt. Sie sind nicht nötig, um das Programm zu bauen.

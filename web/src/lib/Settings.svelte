@@ -8,7 +8,7 @@
   // Lokale Arbeitskopie der Steckdosen-Liste.
   // Wie im Dashboard nach Typ gruppiert; die Reihenfolge innerhalb einer Gruppe = Reihenfolge im Dashboard.
   let uid = 0;
-  const withId = (p) => ({ _id: uid++, name: p.name || '', ip: p.ip || '', _group: 'none' });
+  const withId = (p) => ({ _id: uid++, nummer: p.nummer || '', name: p.name || '', ip: p.ip || '', _group: 'none' });
 
   const byIp = $derived(new Map(live.devices.filter((d) => d.ip).map((d) => [d.ip, d])));
   const groupForIp = (ip) => groupKey(byIp.get(String(ip).trim()));
@@ -17,12 +17,12 @@
   const canon = (list) =>
     JSON.stringify(
       GROUPS.flatMap((g) =>
-        list.filter((p) => p.ip.trim() && groupForIp(p.ip) === g.key).map((p) => ({ name: p.name, ip: p.ip.trim() }))
+        list.filter((p) => p.ip.trim() && groupForIp(p.ip) === g.key).map((p) => ({ nummer: p.nummer.trim(), name: p.name, ip: p.ip.trim() }))
       )
     );
 
   let rows = $state(live.plugs.map(withId));
-  let saved = $state(live.plugs.map(({ name, ip }) => ({ name: name || '', ip })));
+  let saved = $state(live.plugs.map(({ nummer, name, ip }) => ({ nummer: nummer || '', name: name || '', ip })));
   let msg = $state(null);
   const dirty = $derived(canon(rows) !== canon(saved));
 
@@ -149,7 +149,7 @@
   async function save() {
     try {
       regroup();
-      const list = rows.filter((r) => r.ip.trim()).map(({ name, ip }) => ({ name, ip: ip.trim() }));
+      const list = rows.filter((r) => r.ip.trim()).map(({ nummer, name, ip }) => ({ nummer: nummer.trim(), name, ip: ip.trim() }));
       await api('/api/config', { plugs: list }, 'PUT');
       saved = list;
       msg = { ok: true, text: 'Gespeichert.' };
@@ -193,11 +193,11 @@
   <p class="hint muted top-hint">Gruppiert wie im Dashboard. Reihenfolge innerhalb einer Gruppe am Griff <span class="grip-inline">⠿</span> verschieben (oder Griff anklicken und Pfeiltasten ↑ ↓).</p>
   <div class="table-wrap">
     <table class:sorting={dragId !== null}>
-      <thead><tr><th></th><th>Name</th><th>IP-Adresse</th><th>Gerät im MQTT</th><th></th></tr></thead>
+      <thead><tr><th></th><th>Nr.</th><th>Name</th><th>IP-Adresse</th><th>Gerät im MQTT</th><th></th></tr></thead>
       {#each groups as g (g.key)}
       <tbody bind:this={tbodies[g.key]} class="grp {g.key}">
         <tr class="group-row">
-          <td colspan="5">
+          <td colspan="6">
             <span class="gicon"><DeviceIcon kind={g.key} size={16} /></span>
             {g.key === 'none' ? 'Neu oder nicht gefunden' : g.label}
             <span class="gcount">{g.rows.length}</span>
@@ -224,6 +224,7 @@
                 </svg>
               </button>
             </td>
+            <td class="nr-cell"><input class="nr" bind:value={row.nummer} maxlength="8" placeholder="–" aria-label="Nummer auf der Steckdose" /></td>
             <td><input bind:value={row.name} placeholder={dev?.name || 'z. B. Wohnzimmer'} /></td>
             <td><input class="mono" bind:value={row.ip} list="ips" placeholder="192.168.178.…" onchange={() => queueMicrotask(regroup)} /></td>
             <td>
@@ -236,7 +237,7 @@
         {/each}
       </tbody>
       {:else}
-        <tbody><tr><td colspan="5" class="muted">Noch keine Einträge – unten ein gefundenes Gerät übernehmen oder manuell hinzufügen.</td></tr></tbody>
+        <tbody><tr><td colspan="6" class="muted">Noch keine Einträge – unten ein gefundenes Gerät übernehmen oder manuell hinzufügen.</td></tr></tbody>
       {/each}
     </table>
   </div>
@@ -325,7 +326,9 @@
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   th { font-size: 12px; color: var(--muted); font-weight: 600; }
-  td:nth-child(3) input { min-width: 150px; }
+  td:nth-child(4) input { min-width: 150px; }
+  .nr-cell { width: 64px; }
+  .nr { width: 52px; text-align: center; font-weight: 650; font-variant-numeric: tabular-nums; }
   .found, .ok { color: var(--on); }
   .notfound, .err { color: var(--err); }
   .actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }

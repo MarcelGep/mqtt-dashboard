@@ -47,12 +47,16 @@
   <div class="glow" aria-hidden="true"></div>
 
   <div class="head">
-    <span class="num"><DeviceIcon kind={d?.kind} size={18} /></span>
+    {#if plug.nummer}
+      <span class="num nr" title="Nummer {plug.nummer}">{plug.nummer}</span>
+    {:else}
+      <span class="num"><DeviceIcon kind={d?.kind} size={18} /></span>
+    {/if}
     <span class="pill"><span class="dot"></span>{label[status]}</span>
   </div>
 
   <div class="center">
-    <button class="power" disabled={!canSwitch} onclick={toggle} aria-label="{name} {d?.on ? 'ausschalten' : 'einschalten'}" aria-pressed={!!d?.on}>
+    <button class="power" disabled={!canSwitch} onclick={toggle} aria-label="{plug.nummer ? `Nr. ${plug.nummer} ` : ''}{name} {d?.on ? 'ausschalten' : 'einschalten'}" aria-pressed={!!d?.on}>
       <span class="ring" aria-hidden="true"></span>
       <span class="clip" aria-hidden="true">
         {#each ripples as r (r.id)}
@@ -109,6 +113,7 @@
     background: var(--btn); color: var(--muted);
     transition: background 0.4s, color 0.4s;
   }
+  .num.nr { width: auto; min-width: 32px; padding: 0 8px; font-weight: 750; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--text); }
   .on .num { background: var(--on-soft); color: var(--on); }
   .pill {
     display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
