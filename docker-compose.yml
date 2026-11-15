@@ -1,0 +1,13 @@
+# Vorlage für den Stack im Unraid Compose Manager (Inhalt dort einfügen).
+# Das Image wird auf dem Mac gebaut und per "npm run deploy:unraid" übertragen – Unraid baut nichts selbst.
+services:
+  steckdosen-dashboard:
+    image: steckdosen-dashboard:latest
+    container_name: steckdosen-dashboard
+    restart: unless-stopped
+    ports:
+      - "8070:8080"   # Host-Port 8070 → Container-Port 8080
+    volumes:
+      - /mnt/user/appdata/steckdosen-dashboard/data:/data   # settings.json + plugs.json
+    environment:
+      - TZ=Europe/Berlin

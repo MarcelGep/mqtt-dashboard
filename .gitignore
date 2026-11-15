@@ -1,0 +1,4 @@
+node_modules
+web/dist
+plugs.json
+settings.json

@@ -1,0 +1,6 @@
+node_modules
+web/dist
+settings.json
+plugs.json
+.git
+*.log
