@@ -27,6 +27,7 @@ Hinweis: Das Dashboard hat keinen eigenen Login. Jeder im Heimnetz, der die Seit
   Kommt nach 5 s keine Bestätigung, erscheint ein Fehler.
 - „Offline“ kommt aus dem Last Will (Tasmota `LWT`, Shelly `online`).
 - Die Steckdosen werden über ihre IP-Adresse erkannt. Feste IPs (DHCP-Reservierung in der Fritz!Box) sind deshalb sinnvoll.
+- Geräte mit mehreren Relais (z. B. Shelly 2.5 / Plus 2PM, Tasmota mit `POWER1`/`POWER2`) erscheinen mit einer Karte pro Relais. In den Einstellungen wählst du neben der IP das Relais aus.
 
 ## Daten
 
@@ -35,7 +36,7 @@ Alles, was du in der Oberfläche einstellst, liegt in zwei Dateien im Datenordne
 | Datei           | Inhalt                                    | Fehlt sie …                                                         |
 |-----------------|-------------------------------------------|---------------------------------------------------------------------|
 | `settings.json` | Broker-Adresse, Benutzer, Passwort        | Standard-Adresse ohne Login, Zugangsdaten in der Oberfläche eintragen |
-| `plugs.json`    | Steckdosen (Nummer + Name + IP) in Anzeige-Reihenfolge | keine Steckdosen eingerichtet                                        |
+| `plugs.json`    | Steckdosen (Nummer + Name + IP + Relais) in Anzeige-Reihenfolge | keine Steckdosen eingerichtet                                        |
 
 Der Datenordner ist standardmäßig der Projektordner und lässt sich mit `DATA_DIR=/pfad` ändern.
 Beide Dateien werden beim Speichern automatisch angelegt. Sie sind nicht nötig, um das Programm zu bauen.

@@ -36,7 +36,7 @@
 
     requestError = null;
     try {
-      await setPlug(plug.ip, !d.on);
+      await setPlug(plug.ip, plug.kanal, !d.on);
     } catch (err) {
       requestError = err.message;
     }
@@ -76,7 +76,10 @@
     <div class="name" title={name}>{name}</div>
     <div class="meta">
       <a class="mono ip" href="http://{plug.ip}" target="_blank" rel="noopener noreferrer" title="Weboberfläche der Steckdose öffnen">{plug.ip}</a>
-      {#if d}<span class="type {d.kind}" title={kindLabel[d.kind]}>{d.kind === 'tasmota' ? 'Tasmota' : 'Shelly'}</span>{/if}
+      <span class="tags">
+        {#if d}<span class="type {d.kind}" title={kindLabel[d.kind]}>{d.kind === 'tasmota' ? 'Tasmota' : 'Shelly'}</span>{/if}
+        {#if d?.channels > 1 || plug.kanal > 0}<span class="type relay" title="Relais {plug.kanal + 1}{d ? ` von ${d.channels}` : ''}">Relais {plug.kanal + 1}</span>{/if}
+      </span>
     </div>
   </div>
 
@@ -192,7 +195,9 @@
     font-size: 11px; font-weight: 600; white-space: nowrap;
     padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--btn);
   }
+  .tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
   .type.tasmota { color: #0ea5e9; }
+  .type.relay { color: var(--muted); }
   .type.shelly1, .type.shelly2 { color: #8b5cf6; }
   .error { font-size: 12px; color: var(--err); background: var(--err-soft); padding: 6px 8px; border-radius: 8px; text-align: center; }
 

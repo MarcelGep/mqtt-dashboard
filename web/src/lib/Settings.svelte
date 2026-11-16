@@ -2,27 +2,36 @@
   import { untrack } from 'svelte';
   import { flip } from 'svelte/animate';
   import { prefersReducedMotion } from 'svelte/motion';
-  import { live, api, kindLabel, GROUPS, groupKey } from './live.svelte.js';
+  import { live, api, kindLabel, GROUPS, groupKey, deviceKey } from './live.svelte.js';
   import DeviceIcon from './DeviceIcon.svelte';
 
   // Lokale Arbeitskopie der Steckdosen-Liste.
   // Wie im Dashboard nach Typ gruppiert; die Reihenfolge innerhalb einer Gruppe = Reihenfolge im Dashboard.
   let uid = 0;
-  const withId = (p) => ({ _id: uid++, nummer: p.nummer || '', name: p.name || '', ip: p.ip || '', _group: 'none' });
+  const withId = (p) => ({ _id: uid++, nummer: p.nummer || '', name: p.name || '', ip: p.ip || '', kanal: p.kanal || 0, _group: 'none' });
 
+  // Ein Gerät (IP) kann mehrere Relais haben → jedes Relais ist eine eigene Steckdose
   const byIp = $derived(new Map(live.devices.filter((d) => d.ip).map((d) => [d.ip, d])));
+  const byKey = $derived(new Map(live.devices.filter((d) => d.ip).map((d) => [deviceKey(d), d])));
   const groupForIp = (ip) => groupKey(byIp.get(String(ip).trim()));
+  const rowKey = (r) => `${r.ip.trim()}/${r.kanal || 0}`;
+  // Relais-Auswahl für eine Zeile: alle Relais des Geräts (+ das eingetragene, falls gerade nicht gefunden)
+  const channelsFor = (row) => {
+    const chs = new Set(live.devices.filter((d) => d.ip === row.ip.trim()).map((d) => d.ch));
+    chs.add(row.kanal || 0);
+    return [...chs].sort((a, b) => a - b);
+  };
 
   // Vergleichsform „so wie das Dashboard es zeigt“ – für die Anzeige ungespeicherter Änderungen
   const canon = (list) =>
     JSON.stringify(
       GROUPS.flatMap((g) =>
-        list.filter((p) => p.ip.trim() && groupForIp(p.ip) === g.key).map((p) => ({ nummer: p.nummer.trim(), name: p.name, ip: p.ip.trim() }))
+        list.filter((p) => p.ip.trim() && groupForIp(p.ip) === g.key).map((p) => ({ nummer: p.nummer.trim(), name: p.name, ip: p.ip.trim(), kanal: p.kanal || 0 }))
       )
     );
 
   let rows = $state(live.plugs.map(withId));
-  let saved = $state(live.plugs.map(({ nummer, name, ip }) => ({ nummer: nummer || '', name: name || '', ip })));
+  let saved = $state(live.plugs.map(({ nummer, name, ip, kanal }) => ({ nummer: nummer || '', name: name || '', ip, kanal: kanal || 0 })));
   let msg = $state(null);
   const dirty = $derived(canon(rows) !== canon(saved));
 
@@ -95,10 +104,10 @@
     if (e.key === 'ArrowDown') { e.preventDefault(); move(row, i + 1); }
   }
 
-  const assigned = $derived(new Set(rows.map((r) => r.ip.trim())));
+  const assigned = $derived(new Set(rows.map(rowKey)));
 
   function add(device) {
-    const row = withId({ name: device?.name, ip: device?.ip });
+    const row = withId({ name: device?.name, ip: device?.ip, kanal: device?.ch });
     row._group = groupKey(device);
     rows = ordered([...rows, row]);
     msg = null;
@@ -107,6 +116,37 @@
   function remove(row) {
     rows = rows.filter((r) => r._id !== row._id);
     msg = null;
+  }
+
+  // ---------- Neu suchen ----------
+  // Die Geräte antworten nach und nach (meist innerhalb von 1–3 s), ein „fertig“-Signal gibt es nicht →
+  // feste Wartezeit anzeigen und danach melden, was neu dazugekommen ist.
+  const SEARCH_MS = 2000;
+  let searching = $state(false);
+  let searchMsg = $state(null);
+  let searchTimer;
+
+  async function discover() {
+    clearTimeout(searchTimer);
+    const before = new Set(live.devices.map((d) => d.id));
+    searching = true;
+    searchMsg = null;
+    try {
+      await api('/api/discover');
+    } catch (e) {
+      searching = false;
+      searchMsg = { ok: false, text: e.message };
+      return;
+    }
+    searchTimer = setTimeout(() => {
+      searching = false;
+      const found = live.devices.filter((d) => !before.has(d.id)).length;
+      searchMsg = {
+        ok: true,
+        text: found ? `${found} ${found === 1 ? 'neue Steckdose' : 'neue Steckdosen'} gefunden` : 'Keine neuen Steckdosen gefunden',
+      };
+      searchTimer = setTimeout(() => (searchMsg = null), 5000);
+    }, SEARCH_MS);
   }
 
   // ---------- MQTT-Broker ----------
@@ -149,7 +189,7 @@
   async function save() {
     try {
       regroup();
-      const list = rows.filter((r) => r.ip.trim()).map(({ nummer, name, ip }) => ({ nummer: nummer.trim(), name, ip: ip.trim() }));
+      const list = rows.filter((r) => r.ip.trim()).map(({ nummer, name, ip, kanal }) => ({ nummer: nummer.trim(), name, ip: ip.trim(), kanal: kanal || 0 }));
       await api('/api/config', { plugs: list }, 'PUT');
       saved = list;
       msg = { ok: true, text: 'Gespeichert.' };
@@ -204,7 +244,8 @@
           </td>
         </tr>
         {#each g.rows as row (row._id)}
-          {@const dev = byIp.get(row.ip.trim())}
+          {@const dev = byKey.get(rowKey(row))}
+          {@const chs = channelsFor(row)}
           <tr data-id={row._id} class:dragging={dragId === row._id} animate:flip={{ duration: prefersReducedMotion.current ? 0 : 200 }}>
             <td class="grip-cell">
               <button
@@ -226,7 +267,16 @@
             </td>
             <td class="nr-cell"><input class="nr" bind:value={row.nummer} maxlength="8" placeholder="–" aria-label="Nummer auf der Steckdose" /></td>
             <td><input bind:value={row.name} placeholder={dev?.name || 'z. B. Wohnzimmer'} /></td>
-            <td><input class="mono" bind:value={row.ip} list="ips" placeholder="192.168.178.…" onchange={() => queueMicrotask(regroup)} /></td>
+            <td>
+              <div class="ip-cell">
+                <input class="mono" bind:value={row.ip} list="ips" placeholder="192.168.178.…" onchange={() => queueMicrotask(regroup)} />
+                {#if chs.length > 1 || row.kanal > 0}
+                  <select bind:value={row.kanal} aria-label="Relais am Gerät">
+                    {#each chs as ch}<option value={ch}>Relais {ch + 1}</option>{/each}
+                  </select>
+                {/if}
+              </div>
+            </td>
             <td>
               {#if !row.ip.trim()}<span class="muted">–</span>
               {:else if dev}<span class="found">✓ {dev.name || dev.topic}</span> <span class="muted mono">{kindLabel[dev.kind]}</span>
@@ -242,7 +292,7 @@
     </table>
   </div>
   <datalist id="ips">
-    {#each live.devices.filter((d) => d.ip) as d}<option value={d.ip}>{d.name || d.topic}</option>{/each}
+    {#each [...byIp.values()] as d}<option value={d.ip}>{d.deviceName || d.name || d.topic}</option>{/each}
   </datalist>
   <div class="actions">
     <button onclick={() => add()}>+ Manuell hinzufügen</button>
@@ -255,21 +305,30 @@
 <section>
   <div class="head">
     <h2>Im MQTT gefundene Steckdosen ({live.devices.length})</h2>
-    <button onclick={() => api('/api/discover')} disabled={!live.mqtt.connected}>Neu suchen</button>
+    <div class="search">
+      {#if searchMsg}<span class="search-msg" class:err={!searchMsg.ok}>{searchMsg.text}</span>{/if}
+      <button class="search-btn" onclick={discover} disabled={!live.mqtt.connected || searching} aria-busy={searching}>
+        {#if searching}<span class="spinner" aria-hidden="true"></span>Suche läuft …{:else}Neu suchen{/if}
+      </button>
+    </div>
   </div>
-  <div class="table-wrap">
+  <div class="table-wrap" class:busy={searching}>
+    {#if searching}<div class="progress" style="--dur: {SEARCH_MS}ms" aria-hidden="true"></div>{/if}
     <table>
       <thead><tr><th>IP-Adresse</th><th>Name</th><th>MQTT-Topic</th><th>Typ</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {#each live.devices as d (d.id)}
           <tr>
             <td class="mono">{d.ip || '…'}</td>
-            <td>{d.name || '–'}</td>
+            <td>
+              {#if d.channels > 1}{d.relayName || d.deviceName || '–'} <span class="muted">· Relais {d.ch + 1}/{d.channels}</span>
+              {:else}{d.name || '–'}{/if}
+            </td>
             <td class="mono muted">{d.topic}</td>
             <td>{kindLabel[d.kind]}</td>
             <td>{d.online === false ? 'offline' : d.on ? 'an' : d.on === false ? 'aus' : '?'}</td>
             <td>
-              {#if assigned.has(d.ip)}<span class="muted">zugeordnet</span>
+              {#if assigned.has(deviceKey(d))}<span class="muted">zugeordnet</span>
               {:else}<button disabled={!d.ip} onclick={() => add(d)}>Übernehmen</button>{/if}
             </td>
           </tr>
@@ -327,6 +386,33 @@
   tr:last-child td { border-bottom: none; }
   th { font-size: 12px; color: var(--muted); font-weight: 600; }
   td:nth-child(4) input { min-width: 150px; }
+  .ip-cell { display: flex; gap: 6px; align-items: center; }
+
+  /* Neu suchen: Spinner im Button + Fortschrittsbalken über der Tabelle */
+  .search { display: flex; align-items: center; gap: 10px; }
+  .search-msg { font-size: 13px; color: var(--on); }
+  .search-btn { display: inline-flex; align-items: center; gap: 8px; }
+  .search-btn:disabled[aria-busy='true'] { opacity: 1; cursor: progress; }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: var(--accent);
+    animation: spin360 0.7s linear infinite;
+  }
+  @keyframes spin360 { to { transform: rotate(360deg); } }
+  .table-wrap { position: relative; }
+  .progress {
+    position: absolute; top: 0; left: 0; height: 3px; width: 100%; z-index: 1;
+    background: var(--accent); transform-origin: left; animation: fill var(--dur) linear forwards;
+  }
+  @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .progress { animation: none; opacity: 0.6; }
+  }
+  select {
+    font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg-solid); color: var(--text);
+  }
+  select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
   .nr-cell { width: 64px; }
   .nr { width: 52px; text-align: center; font-weight: 650; font-variant-numeric: tabular-nums; }
   .found, .ok { color: var(--on); }

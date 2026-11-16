@@ -30,7 +30,10 @@ export async function api(url, body, method = 'POST') {
   return data;
 }
 
-export const setPlug = (ip, on) => api(`/api/plugs/${ip}`, { on });
+// Eine Steckdose = ein Relais an einem Gerät (IP + Kanal, 0 = erstes Relais)
+export const setPlug = (ip, kanal, on) => api(`/api/plugs/${ip}/${kanal || 0}`, { on });
+export const plugKey = (p) => `${p.ip}/${p.kanal || 0}`;
+export const deviceKey = (d) => `${d.ip}/${d.ch || 0}`;
 
 export const kindLabel = { tasmota: 'Tasmota', shelly1: 'Shelly Gen1', shelly2: 'Shelly Gen2+' };
 

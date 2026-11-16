@@ -3,7 +3,7 @@
   import { flip } from 'svelte/animate';
   import { cubicOut } from 'svelte/easing';
   import { Tween, prefersReducedMotion } from 'svelte/motion';
-  import { live, connect, setPlug, GROUPS, groupKey } from './lib/live.svelte.js';
+  import { live, connect, setPlug, plugKey, GROUPS, groupKey } from './lib/live.svelte.js';
   import PlugCard from './lib/PlugCard.svelte';
   import Settings from './lib/Settings.svelte';
   import DeviceIcon from './lib/DeviceIcon.svelte';
@@ -29,7 +29,7 @@
   );
 
   function setAll(on, list = live.plugs) {
-    for (const p of list) if (p.device?.online && p.device.on !== on) setPlug(p.ip, on).catch(() => {});
+    for (const p of list) if (p.device?.online && p.device.on !== on) setPlug(p.ip, p.kanal, on).catch(() => {});
   }
 
   // Zugeklappte Gruppen (pro Browser gemerkt)
@@ -126,7 +126,7 @@
                   <span class="group-count">{group.on} / {group.plugs.length} an</span>
                   {#if collapsed[group.key]}
                     <span class="mini-dots" transition:fade={{ duration: motion(200) }}>
-                      {#each group.plugs as p (p.ip)}
+                      {#each group.plugs as p (plugKey(p))}
                         <span class="mini" class:on={p.device?.on} class:off={p.device && p.device.online === false} title={p.name || p.device?.name || p.ip}></span>
                       {/each}
                     </span>
@@ -142,7 +142,7 @@
               </div>
               {#if !collapsed[group.key]}
                 <div class="grid" transition:slide={{ duration: motion(300), easing: cubicOut }}>
-                  {#each group.plugs as plug, i (plug.ip)}
+                  {#each group.plugs as plug, i (plugKey(plug))}
                     <div
                       animate:flip={{ duration: motion(300) }}
                       in:fly|global={{ y: 24, duration: motion(450), delay: motion(i * 50), easing: cubicOut }}
