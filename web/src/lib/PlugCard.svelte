@@ -75,7 +75,7 @@
   <div class="foot">
     <div class="name" title={name}>{name}</div>
     <div class="meta">
-      <span class="mono">{plug.ip}</span>
+      <a class="mono ip" href="http://{plug.ip}" target="_blank" rel="noopener noreferrer" title="Weboberfläche der Steckdose öffnen">{plug.ip}</a>
       {#if d}<span class="type {d.kind}" title={kindLabel[d.kind]}>{d.kind === 'tasmota' ? 'Tasmota' : 'Shelly'}</span>{/if}
     </div>
   </div>
@@ -88,13 +88,12 @@
 <style>
   .card {
     position: relative; overflow: hidden; isolation: isolate;
-    display: flex; flex-direction: column; gap: 14px; padding: 16px;
+    display: flex; flex-direction: column; gap: 14px; padding: 16px; height: 100%; box-sizing: border-box;
     border-radius: 20px; background: var(--card); border: 1px solid var(--card-border);
     box-shadow: var(--shadow);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s, border-color 0.4s, opacity 0.3s, filter 0.3s;
   }
-  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
 
   /* Leuchten im Hintergrund, wenn eingeschaltet */
   .glow {
@@ -175,12 +174,20 @@
   @keyframes ripple { to { transform: scale(22); opacity: 0; } }
 
   /* ---------- Fuß ---------- */
-  .foot { text-align: center; min-width: 0; }
-  .name { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .foot { text-align: center; min-width: 0; margin-top: auto; }
+  /* lange Namen auf bis zu 2 Zeilen umbrechen, lange Wörter mit Silbentrennung (lang="de") */
+  .name {
+    font-weight: 650; line-height: 1.25;
+    min-height: 2.5em; /* immer Platz für 2 Zeilen → alle Karten gleich hoch */
+    hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+  }
   .meta {
     color: var(--muted); margin-top: 6px;
     display: flex; flex-direction: column; align-items: center; gap: 5px;
   }
+  .ip { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; transition: color 0.2s; }
+  .ip:hover, .ip:focus-visible { color: var(--accent); border-bottom-style: solid; }
   .type {
     font-size: 11px; font-weight: 600; white-space: nowrap;
     padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--btn);
