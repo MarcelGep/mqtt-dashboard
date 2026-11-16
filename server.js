@@ -1,4 +1,4 @@
-// WLAN-Steckdosen-Dashboard – Backend
+// MQTT-Dashboard – Backend
 // Verbindet sich mit dem MQTT-Broker, erkennt Tasmota- und Shelly-Steckdosen automatisch,
 // hält ihren Zustand live und stellt eine kleine API + das Svelte-Frontend bereit.
 //
@@ -17,7 +17,7 @@ const CONFIG_FILE = path.join(DATA_DIR, 'plugs.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const DEFAULT_BROKER = { url: 'mqtt://192.168.178.196:1883', user: '', pass: '' };
 const DIST_DIR = path.join(__dirname, 'web', 'dist');
-const CLIENT_ID = 'steckdosen-dashboard-' + Math.random().toString(16).slice(2, 8);
+const CLIENT_ID = 'mqtt-dashboard-' + Math.random().toString(16).slice(2, 8);
 const CONFIRM_TIMEOUT_MS = 5000;
 const POLL_INTERVAL_MS = 60000;
 
@@ -518,7 +518,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`Steckdosen-Dashboard: http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`MQTT-Dashboard: http://localhost:${PORT}`));
 connectMqtt();
 
 // ---------------------------------------------------------------------------

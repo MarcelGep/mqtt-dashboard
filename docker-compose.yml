@@ -2,12 +2,12 @@
 # Das Image wird auf dem Mac gebaut und per "npm run deploy:unraid" übertragen – Unraid baut nichts selbst.
 services:
   steckdosen-dashboard:
-    image: steckdosen-dashboard:latest
-    container_name: steckdosen-dashboard
+    image: mqtt-dashboard:latest
+    container_name: mqtt-dashboard
     restart: unless-stopped
     ports:
       - "8070:8080"   # Host-Port 8070 → Container-Port 8080
     volumes:
-      - /mnt/user/appdata/steckdosen-dashboard/data:/data   # settings.json + plugs.json
+      - /mnt/user/appdata/mqtt-dashboard/data:/data   # settings.json + plugs.json
     environment:
       - TZ=Europe/Berlin

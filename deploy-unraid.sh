@@ -6,8 +6,8 @@
 set -euo pipefail
 
 HOST="${UNRAID_HOST:-root@unraid}"
-DATA_DIR="/mnt/user/appdata/steckdosen-dashboard/data"
-IMAGE="steckdosen-dashboard:latest"
+DATA_DIR="/mnt/user/appdata/mqtt-dashboard/data"
+IMAGE="mqtt-dashboard:latest"
 
 cd "$(dirname "$0")"
 

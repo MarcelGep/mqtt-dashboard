@@ -1,4 +1,4 @@
-# WLAN-Steckdosen-Dashboard
+# MQTT-Dashboard
 
 Svelte-Dashboard zum Ein- und Ausschalten von WLAN-Steckdosen über MQTT (Mosquitto), mit Live-Status.
 
@@ -55,17 +55,17 @@ Lokale `settings.json` und `plugs.json` werden nur beim ersten Mal übertragen. 
 
 Manuell geht es so: Image bauen, z. B. auf dem Mac, und auf den Server bringen, oder direkt auf Unraid bauen:
 
-    docker build -t steckdosen-dashboard .
+    docker build -t mqtt-dashboard .
 
 Container starten. Wichtig ist das Volume für `/data`, sonst gehen die Einstellungen bei jedem Update verloren:
 
-    docker run -d --name steckdosen-dashboard --restart unless-stopped \
+    docker run -d --name mqtt-dashboard --restart unless-stopped \
       -p 8080:8080 \
-      -v /mnt/user/appdata/steckdosen-dashboard/data:/data \
-      steckdosen-dashboard
+      -v /mnt/user/appdata/mqtt-dashboard/data:/data \
+      mqtt-dashboard
 
 Danach http://<unraid-ip>:8080 öffnen und unter Einstellungen den Broker eintragen.
-Wenn du deine bisherige Einrichtung übernehmen willst, kopier vorher `settings.json` und `plugs.json` nach `/mnt/user/appdata/steckdosen-dashboard/data/`.
+Wenn du deine bisherige Einrichtung übernehmen willst, kopier vorher `settings.json` und `plugs.json` nach `/mnt/user/appdata/mqtt-dashboard/data/`.
 
 Update: neues Image bauen, Container löschen und mit demselben `docker run` neu starten. Die Daten im Volume bleiben erhalten.
 
